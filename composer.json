@@ -1,13 +1,18 @@
 {
-	"name": "jalno/graphql",
-	"version": "0.0.1",
-	"autoload": {
-		"psr-4": {
-			"Jalno\\GraphQL\\": "src/"
-		}
-	},
-	"require": {
-		"jalno/lumen": "^0.0.1",
-		"webonyx/graphql-php": "^14.8.0"
-	}
+    "name": "jalno/graphql",
+    "version": "0.0.1",
+    "autoload": {
+        "psr-4": {
+            "Jalno\\GraphQL\\": "src/"
+        }
+    },
+    "require": {
+        "jalno/lumen": "^0.0.1",
+        "webonyx/graphql-php": "^14.8.0"
+    },
+    "extra": {
+        "jalno": {
+            "package": "Jalno\\GraphQL\\Package"
+        }
+    }
 }
