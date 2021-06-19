@@ -2,7 +2,7 @@
 namespace Jalno\GraphQL\Http\Controllers;
 
 use RuntimeException;
-use Laravel\Lumen\Application;
+use Jalno\Lumen\Application;
 use Laravel\Lumen\Routing\Controller;
 use Illuminate\Http\Request;
 use Jalno\GraphQL\Contracts\IGraphQLable;
@@ -23,14 +23,25 @@ class GraphqlController extends Controller {
 		$this->app = $app;
 	}
 
+	/**
+	 * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Laravel\Lumen\Http\ResponseFactory|mixed
+	 */
 	public function run(Request $request)
 	{
-		$builtin = Parser::parse(file_get_contents(package()->path("buildin-definations.graphql")));
+		$builtinFileContent = file_get_contents(package()->path("buildin-definations.graphql"));
+		if ($builtinFileContent === false) {
+			throw new \RuntimeException("can not read content of file 'buildin-definations.graphql'");
+		}
+		$builtin = Parser::parse($builtinFileContent);
 		$schema = BuildSchema::build($builtin);
 		foreach ($this->app->packages->all() as $package) {
+			/** @var \Jalno\Lumen\Contracts\IPackage&IGraphQLable $package */
 			if ($package instanceof IGraphQLable) {
 				foreach ($package->getSchemaFiles() as $file) {
 					$contents = file_get_contents($package->path($file));
+					if ($contents === false) {
+						throw new \RuntimeException("can not get schema file: '{$package->path($file)}' of package: '{$package->getName()}'");
+					}
 					$schema = SchemaExtender::extend($schema, Parser::parse($contents));
 				}
 			}
@@ -44,15 +55,24 @@ class GraphqlController extends Controller {
 
 			$result = GraphQL::executeQuery($schema, $query, [], null, $variableValues, null, function($objectValue, $args, $context, ResolveInfo $info) use(&$request) {
 
+				if ($info->fieldDefinition->astNode === null) {
+					throw new \RuntimeException("the astNode is null");
+				}
 				$directives = $info->fieldDefinition->astNode->directives;
 				$count = $directives->count();
 
 				$controller = $method = null;
 				for ($i = 0; $i < $count; $i++) {
 					$node = $directives->offsetGet($i);
-					if ($node->name->value == "method") {
-						[$controller, $method] = explode("@", $node->arguments->offsetGet(0)->value->value, 2);
-						break;
+					/** check existence of value,
+					 * 	cuz some of '\GraphQL\Language\AST\ValueNode' types do not have value! (like ListValueNode, NullValueNode, ObjectValueNode and VariableNode)
+					 */
+					if (isset($node->name->value) and $node->name->value == "method") {
+						$value = $node->arguments->offsetGet(0)->value;
+						if (isset($value->value) and is_string($value->value)) {
+							[$controller, $method] = explode("@", $value->value, 2);
+							break;
+						}
 					}
 				}
 				if ($controller and $method) {
