@@ -1,6 +1,7 @@
 {
     "name": "jalno/graphql",
     "version": "0.0.1",
+    "description": "Jalno GraphQL",
     "autoload": {
         "psr-4": {
             "Jalno\\GraphQL\\": "src/"
