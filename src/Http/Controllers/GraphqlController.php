@@ -2,7 +2,7 @@
 namespace Jalno\GraphQL\Http\Controllers;
 
 use RuntimeException;
-use Jalno\Lumen\Application;
+use Jalno\Lumen\Contracts\IPackages;
 use Laravel\Lumen\Routing\Controller;
 use Illuminate\Http\Request;
 use Jalno\GraphQL\Contracts\IGraphQLable;
@@ -16,11 +16,11 @@ use GraphQL\Type\Definition\ResolveInfo;
 
 class GraphqlController extends Controller {
 
-	protected Application $app;
+	protected IPackages $packages;
 
-	public function __construct(Application $app)
+	public function __construct(IPackages $packages)
 	{
-		$this->app = $app;
+		$this->packages = $packages;
 	}
 
 	/**
@@ -34,7 +34,7 @@ class GraphqlController extends Controller {
 		}
 		$builtin = Parser::parse($builtinFileContent);
 		$schema = BuildSchema::build($builtin);
-		foreach ($this->app->packages->all() as $package) {
+		foreach ($this->packages->all() as $package) {
 			/** @var \Jalno\Lumen\Contracts\IPackage&IGraphQLable $package */
 			if ($package instanceof IGraphQLable) {
 				foreach ($package->getSchemaFiles() as $file) {
