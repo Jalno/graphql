@@ -24,7 +24,7 @@ class GraphqlController extends Controller {
 	}
 
 	/**
-	 * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse|\Laravel\Lumen\Http\ResponseFactory|mixed
+	 * @return mixed
 	 */
 	public function run(Request $request)
 	{
@@ -64,9 +64,8 @@ class GraphqlController extends Controller {
 				$controller = $method = null;
 				for ($i = 0; $i < $count; $i++) {
 					$node = $directives->offsetGet($i);
-					/** check existence of value,
-					 * 	cuz some of '\GraphQL\Language\AST\ValueNode' types do not have value! (like ListValueNode, NullValueNode, ObjectValueNode and VariableNode)
-					 */
+					// check existence of value,
+					// cuz some of '\GraphQL\Language\AST\ValueNode' types do not have value! (like ListValueNode, NullValueNode, ObjectValueNode and VariableNode)
 					if (isset($node->name->value) and $node->name->value == "method") {
 						$value = $node->arguments->offsetGet(0)->value;
 						if (isset($value->value) and is_string($value->value)) {
