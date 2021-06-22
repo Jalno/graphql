@@ -4,11 +4,10 @@ namespace Jalno\GraphQL\Http\Controllers;
 use RuntimeException;
 use Jalno\Lumen\Contracts\IPackages;
 use Laravel\Lumen\Routing\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Http\{Request, JsonResponse};
 use Jalno\GraphQL\Contracts\IGraphQLable;
 use GraphQL\Utils\{BuildSchema, SchemaExtender};
-use GraphQL\Language\Parser;
-use GraphQL\Language\AST\DocumentNode;
+use GraphQL\Language\{Parser, AST\DocumentNode};
 use GraphQL\GraphQL;
 use GraphQL\Error\DebugFlag;
 use GraphQL\Type\Definition\ResolveInfo;
@@ -35,7 +34,6 @@ class GraphqlController extends Controller {
 		$builtin = Parser::parse($builtinFileContent);
 		$schema = BuildSchema::build($builtin);
 		foreach ($this->packages->all() as $package) {
-			/** @var \Jalno\Lumen\Contracts\IPackage&IGraphQLable $package */
 			if ($package instanceof IGraphQLable) {
 				foreach ($package->getSchemaFiles() as $file) {
 					$contents = file_get_contents($package->path($file));
@@ -80,8 +78,8 @@ class GraphqlController extends Controller {
 					if (!class_exists($controller) or !method_exists($controller, $method)) {
 						throw new RuntimeException("Api controller or method is not exists");
 					}
-					$controllerObject = (new $controller);
-					if (method_exists($controller, "forUser") and !is_null($request->user())) {
+					$controllerObject = new $controller();
+					if (method_exists($controllerObject, "forUser") and !is_null($request->user())) {
 						$controllerObject->forUser($request->user());
 					}
 					return $controllerObject->$method($args);
@@ -102,6 +100,6 @@ class GraphqlController extends Controller {
 				]
 			];
 		}
-		return response()->json($output);
+		return new JsonResponse($output);
 	}
 }
