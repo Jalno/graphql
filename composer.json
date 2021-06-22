@@ -1,14 +1,23 @@
 {
     "name": "jalno/graphql",
-    "version": "0.0.1",
+    "description": "Jalno GraphQL",
     "autoload": {
         "psr-4": {
             "Jalno\\GraphQL\\": "src/"
         }
     },
     "require": {
-        "jalno/lumen": "^0.0.1",
+        "jalno/lumen": "^1.0.0",
         "webonyx/graphql-php": "^14.8.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^0.12.90"
+    },
+    "scripts": {
+        "test:types": "./vendor/phpstan/phpstan/phpstan analyse",
+        "test": [
+            "@test:types"
+        ]
     },
     "extra": {
         "jalno": {

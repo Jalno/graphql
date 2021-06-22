@@ -1,11 +1,13 @@
 <?php
 namespace Jalno\GraphQL\Contracts;
 
-interface IGraphQLable
+use Jalno\Lumen\Contracts\IPackage;
+
+interface IGraphQLable extends IPackage
 {
 
 	/**
-	 * @return array<class-string>
+	 * @return string[]
 	 */
 	public function getSchemaFiles(): array;
 
