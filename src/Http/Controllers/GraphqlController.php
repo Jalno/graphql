@@ -1,76 +1,35 @@
 <?php
 namespace Jalno\GraphQL\Http\Controllers;
 
-use RuntimeException;
-use Laravel\Lumen\Application;
-use Laravel\Lumen\Routing\Controller;
-use Illuminate\Http\Request;
-use Jalno\GraphQL\Contracts\IGraphQLable;
-use GraphQL\Utils\{BuildSchema, SchemaExtender};
-use GraphQL\Language\Parser;
-use GraphQL\Language\AST\DocumentNode;
-use GraphQL\GraphQL;
+use Jalno\GraphQL\Contracts\Kernel;
+use Illuminate\Http\{Request, JsonResponse};
 use GraphQL\Error\DebugFlag;
-use GraphQL\Type\Definition\ResolveInfo;
 
 
-class GraphqlController extends Controller {
+class GraphqlController
+{
+	protected Kernel $kernel;
 
-	protected Application $app;
-
-	public function __construct(Application $app)
+	public function __construct(Kernel $kernel)
 	{
-		$this->app = $app;
+		$this->kernel = $kernel;
 	}
 
-	public function run(Request $request)
+	public function run(Request $request): JsonResponse
 	{
-		$builtin = Parser::parse(file_get_contents(package()->path("buildin-definations.graphql")));
-		$schema = BuildSchema::build($builtin);
-		foreach ($this->app->packages->all() as $package) {
-			if ($package instanceof IGraphQLable) {
-				foreach ($package->getSchemaFiles() as $file) {
-					$contents = file_get_contents($package->path($file));
-					$schema = SchemaExtender::extend($schema, Parser::parse($contents));
-				}
-			}
-		}
-		$input = $request->json()->all();
-		$query = $input['query'];
-		$variableValues = $input['variables'] ?? null;
+		$query = $request->input("query");
+		$variables = $request->input("variables") ?? [];
 
+		if (!$query) {
+			return new JsonResponse([
+				'errors' => [[
+					'message' => 'No query'
+				]],
+			]);
+		}
 		$output = array();
 		try {
-
-			$result = GraphQL::executeQuery($schema, $query, [], null, $variableValues, null, function($objectValue, $args, $context, ResolveInfo $info) use(&$request) {
-
-				$directives = $info->fieldDefinition->astNode->directives;
-				$count = $directives->count();
-
-				$controller = $method = null;
-				for ($i = 0; $i < $count; $i++) {
-					$node = $directives->offsetGet($i);
-					if ($node->name->value == "method") {
-						[$controller, $method] = explode("@", $node->arguments->offsetGet(0)->value->value, 2);
-						break;
-					}
-				}
-				if ($controller and $method) {
-					$controller = str_replace("/", "\\", $controller);
-				
-					if (!class_exists($controller) or !method_exists($controller, $method)) {
-						throw new RuntimeException("Api controller or method is not exists");
-					}
-					$controllerObject = (new $controller);
-					if (method_exists($controller, "forUser") and !is_null($request->user())) {
-						$controllerObject->forUser($request->user());
-					}
-					return $controllerObject->$method($args);
-				} else {
-					return $objectValue->{$info->fieldName};
-				}
-
-			});
+			$result = $this->kernel->execute($query, $variables);
 
 			$debug = config("app.debug") ? (DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE) : DebugFlag::NONE;
 			$output = $result->toArray($debug);
@@ -83,6 +42,6 @@ class GraphqlController extends Controller {
 				]
 			];
 		}
-		return response()->json($output);
+		return new JsonResponse($output);
 	}
 }

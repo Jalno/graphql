@@ -2,6 +2,8 @@
 
 use Jalno\GraphQL\Http\Controllers\GraphqlController;
 
-/** @var \Laravel\Lumen\Routing\Router $router */
+/** @var \Laravel\Lumen\Routing\Router|\Illuminate\Contracts\Routing\Registrar $router */
+$router = app()->router;
 
-$router->addRoute(["GET", "POST"], "/graphql", array('uses' => GraphqlController::class."@run"));
+$router->get("/graphql", array('uses' => GraphqlController::class."@run"));
+$router->post("/graphql", array('uses' => GraphqlController::class."@run"));
