@@ -16,13 +16,16 @@ class DefaultFieldResolver
 	}
 
 	/**
+	 * @param object $objectValue
+	 * @param array<string,mixed> $args
+	 * @param mixed $context
 	 * @return mixed
 	 */
 	public function __invoke($objectValue, $args, $context, ResolveInfo $info)
 	{
 		$controller = $this->findController($info);
 		if ($controller) {
-			return $this->callController($controller);
+			return $this->callController($controller, $args);
 		}
 		return $objectValue->{$info->fieldName};
 	}
@@ -42,14 +45,16 @@ class DefaultFieldResolver
 				}
 			}
 		}
+		return null;
 	}
 
 	/**
+	 * @param array<string,mixed> $args
 	 * @return mixed
 	 */
-	protected function callController($callable)
+	protected function callController(string $callable, $args)
 	{
-		if (is_string($uses) and strpos($callable, '@') === false) {
+		if (strpos($callable, '@') === false) {
             $callable .= "@__invoke";
         }
 		[$controller, $method] = explode("@", $callable, 2);
@@ -57,6 +62,8 @@ class DefaultFieldResolver
 		if (!method_exists($instance, $method)) {
             throw new RuntimeException("Api controller or method is not exists");
         }
-		return $this->container->call([$instance, $method], ["args" => $args]);
+		/** @var callable */
+		$callable = [$instance, $method];
+		return $this->container->call($callable, ["args" => $args]);
 	}
 }

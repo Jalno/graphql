@@ -1,7 +1,7 @@
 <?php
 namespace Jalno\GraphQL;
 
-use Illuminate\Contracts\Container\Container;
+use Illuminate\Container\Container;
 use GraphQL\{GraphQL, Type\Schema, Executor\ExecutionResult};
 use Jalno\GraphQL\Contracts\Kernel as KernelContract;
 
@@ -12,18 +12,16 @@ class Kernel implements KernelContract
 	protected Schema $schema;
 
 	/**
-	 * @property callable
+	 * @var callable
 	 */
 	protected $resolver;
 
-	public function __construct(Container $container, Schema $schema, ?callable $resolver = null)
+	public function __construct(Schema $schema, ?callable $resolver = null)
 	{
-		$this->container = $container;
 		$this->schema = $schema;
-		if (!$resolver) {
-			$resolver = $this->container->make(Resolvers\DefaultFieldResolver::class);
+		if ($resolver) {
+			$this->resolver = $resolver;
 		}
-		$this->resolver = $resolver;
 	}
 
 	public function setSchema(Schema $schema): void
@@ -38,6 +36,9 @@ class Kernel implements KernelContract
 
 	public function getResolver(): callable
 	{
+		if (!isset($this->resolver)) {
+			$this->resolver = Container::getInstance()->make(Resolvers\DefaultFieldResolver::class);
+		}
 		return $this->resolver;
 	}
 

@@ -1,6 +1,7 @@
 <?php
 namespace Jalno\GraphQL;
 
+use Exception;
 use Iterator;
 use Illuminate\Filesystem\Filesystem;
 use GraphQL\Type\Schema;
@@ -33,6 +34,9 @@ class BuildSchema
 			} else {
 				$schema = SchemaExtender::extend($schema, $document);
 			}
+		}
+		if ($schema === null) {
+			throw new Exception("there is no documents to build schema");
 		}
 		return $schema;
 	}
@@ -74,12 +78,12 @@ class BuildSchema
 	}
 
 	/**
-	 * @return array<string,{"install-path":string,"schema"?:mixed}>
+	 * @return array<string,array{"install-path":string,"schema"?:mixed}>
 	 */
 	protected function getAllPackages(): array
 	{
 		/**
-		 * @var array<string,{"install-path":string,"schema"?:mixed}>
+		 * @var array<string,array{"install-path":string,"schema"?:mixed}>
 		 */
 		$packages = [];
 		if ($this->files->exists($this->basePath . '/composer.json')) {
